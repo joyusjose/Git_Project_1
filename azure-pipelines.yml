@@ -1,0 +1,31 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pr: none
+
+# Run on macOS so we can modify iOS plists using PlistBuddy
+pool:
+  vmImage: 'macos-latest'
+
+variables:
+  # Change to minor/major if you want different default bump behavior
+  BUMP_PART: 'patch'
+
+steps:
+  - checkout: self
+    persistCredentials: true
+    clean: true
+
+  - task: NodeTool@0
+    displayName: Use Node.js 18
+    inputs:
+      versionSpec: '18.x'
+
+  - script: |
+      echo "Bumping version using scripts/bump-version.sh"
+      chmod +x scripts/bump-version.sh || true
+      scripts/bump-version.sh "$(BUMP_PART)"
+    displayName: Bump app version (iOS + Android) and push
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
